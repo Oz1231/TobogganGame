@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35327.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TobogganGame", "TobogganGame\TobogganGame.csproj", "{6F9C37FF-865F-4C64-97EC-5B60B25645D5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6F9C37FF-865F-4C64-97EC-5B60B25645D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F9C37FF-865F-4C64-97EC-5B60B25645D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F9C37FF-865F-4C64-97EC-5B60B25645D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F9C37FF-865F-4C64-97EC-5B60B25645D5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2B7BB54B-C13D-4201-B0B4-27CAD0C72252}
+	EndGlobalSection
+EndGlobal
