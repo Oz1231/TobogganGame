@@ -1320,17 +1320,11 @@ namespace TobogganGame
             }
 
             Direction newDirection = DetermineDirectionFromKeyState();
-            bool hasDirection = newDirection != Direction.None;
-
-            if (hasDirection)
-            {
-                gameEngine.SetDirection(newDirection);
-            }
+            gameEngine.SetDirection(newDirection);
         }
 
         private Direction DetermineDirectionFromKeyState()
         {
-            // Combine key states into a single value for switching
             int keyState = (upKeyPressed ? 1 : 0) |
                            (rightKeyPressed ? 2 : 0) |
                            (downKeyPressed ? 4 : 0) |
@@ -1359,7 +1353,8 @@ namespace TobogganGame
                 case 12:    // Down + Left
                     return Direction.DownLeft;
                 default:    // No direction or other combinations
-                    return Direction.None;
+                            // במקום Direction.None, שמור על הכיוון הנוכחי
+                    return gameEngine.Toboggan.Direction;
             }
         }
 

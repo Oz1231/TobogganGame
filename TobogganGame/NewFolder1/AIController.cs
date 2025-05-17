@@ -23,20 +23,20 @@ namespace TobogganGame
         private NeuralNetwork targetNetwork;
 
         // Neural network structure
-        private const int InputSize = 40;
+        private const int InputSize = 32;
         private const int HiddenSize = 128;
         private const int OutputSize = 8;
 
         // Learning parameters
         private double currentLearningRate;
-        private const double InitialLearningRate = 0.001;
-        private const double LearningRateDecay = 0.99995;
+        private const double InitialLearningRate = 0.0005;  
+        private const double LearningRateDecay = 0.9998;    
         private const double MinLearningRate = 0.0001;
 
         private const double DiscountFactor = 0.95;
-        private const double InitialExplorationRate = 0.99;
-        private const double ExplorationRateDecay = 0.9999;
-        private const double MinExplorationRate = 0.05;
+        private const double InitialExplorationRate = 0.95; 
+        private const double ExplorationRateDecay = 0.9995;
+        private const double MinExplorationRate = 0.1;      
 
         // Target network updates
         private const double TargetNetworkTau = 0.05;
@@ -60,7 +60,7 @@ namespace TobogganGame
 
         // Flag collection tracking
         private int framesSinceLastFlag = 0;
-        private const int DirectMoveThreshold = 15;
+        private const int DirectMoveThreshold = 5;
         private double minDistanceToFlag = double.MaxValue;
 
         // State representation
@@ -92,11 +92,6 @@ namespace TobogganGame
 
         // Training mode flag
         public bool TrainingMode { get; private set; } = false;
-
-        // Curriculum learning
-        private int successiveFailures = 0;
-        private int successiveSuccesses = 0;
-        private bool obstacleAvoidanceMode = false;
 
         // Performance tracking
         private List<double> recentQValues = new List<double>();
@@ -189,9 +184,6 @@ namespace TobogganGame
             framesSinceLastFlag = 0;
             minDistanceToFlag = double.MaxValue;
             currentEpisodeReward = 0;
-            successiveFailures = 0;
-            successiveSuccesses = 0;
-            obstacleAvoidanceMode = false;
             recentQValues.Clear();
 
             // Delete saved files
@@ -321,14 +313,7 @@ namespace TobogganGame
                 shouldExplore = random.NextDouble() < currentExplorationRate;
             }
 
-
-            // Decision tree for action selection
-            if (obstacleAvoidanceMode && random.NextDouble() < 0.7)
-            {
-                // Choose an action that avoids nearby obstacles
-                action = GetObstacleAvoidanceAction();
-            }
-            else if (shouldExplore)
+            if (shouldExplore)
             {
                 // Exploration strategy
                 action = SelectExplorationAction();
@@ -424,67 +409,212 @@ namespace TobogganGame
 
             // Calculate optimal direction
             Direction optimalDirection = CalculateOptimalDirection(deltaX, deltaY);
-            int action = (int)optimalDirection;
+            int optimalAction = (int)optimalDirection;
 
-            // Add randomization based on distance to flag
-            double distance = CalculateDistance(head, flag);
-            double randomFactor = Math.Min(0.05, distance / 100.0);
-
-            if (random.NextDouble() < randomFactor)
+            // Check if optimal direction is safe
+            if (IsSafeDirection(optimalDirection))
             {
-                // Apply a slight variation to the direction
-                int variance = random.Next(-1, 2);
-                action = (action + variance + 8) % 8;
+                // If the optimal direction is safe, use it with small randomization
+                if (random.NextDouble() < 0.05)  // 5% chance of randomization
+                {
+                    int variance = random.Next(-1, 2);
+                    return (optimalAction + variance + 8) % 8;
+                }
+                return optimalAction;
             }
 
-            return action;
+            // If the optimal direction is not safe, find a safe alternative
+            List<int> safeDirections = FindSafeDirections();
+
+            if (safeDirections.Count > 0)
+            {
+                // Choose the safe direction that is closest to the optimal direction
+                int bestDirection = safeDirections[0];
+                int minDeviation = Math.Min(
+                    Math.Abs(bestDirection - optimalAction),
+                    Math.Min(Math.Abs(bestDirection - optimalAction + 8),
+                             Math.Abs(bestDirection - optimalAction - 8))
+                );
+
+                foreach (int dir in safeDirections)
+                {
+                    int deviation = Math.Min(
+                        Math.Abs(dir - optimalAction),
+                        Math.Min(Math.Abs(dir - optimalAction + 8),
+                                 Math.Abs(dir - optimalAction - 8))
+                    );
+
+                    if (deviation < minDeviation)
+                    {
+                        minDeviation = deviation;
+                        bestDirection = dir;
+                    }
+                }
+
+                return bestDirection;
+            }
+
+            // If there are no safe directions, return the least dangerous
+            return FindLeastDangerousDirection();
         }
 
-        /// <summary>
-        /// Gets an action that prioritizes avoiding nearby obstacles
-        /// </summary>
-        /// <returns>The action index</returns>
-        private int GetObstacleAvoidanceAction()
+        // Helper function to check if a direction is safe
+        private bool IsSafeDirection(Direction direction)
         {
-            var safeDirections = new List<int>();
-            var flagDirections = new List<int>();
+            Point head = gameEngine.Toboggan.Head;
+            Point nextPos = CalculateNextPosition(head, direction);
 
-            // Analyze environmental data
-            for (int i = 0; i < directions.Length; i++)
+            // Check for wall collision
+            if (nextPos.X < 0 || nextPos.X >= gridWidth ||
+                nextPos.Y < 0 || nextPos.Y >= gridHeight)
             {
-                // Check for close obstacles or walls
-                bool isDangerous = currentState[i * 4] > 0.7 || // Wall is close
-                                  currentState[i * 4 + 3] > 0.7; // Obstacle is close
+                return false;
+            }
 
-                if (!isDangerous)
+            // Check for obstacle collision
+            foreach (Obstacle obstacle in gameEngine.Obstacles)
+            {
+                if (obstacle.Position.X == nextPos.X && obstacle.Position.Y == nextPos.Y)
+                {
+                    return false;
+                }
+            }
+
+            // Check for self collision
+            foreach (Point segment in gameEngine.Toboggan.Segments)
+            {
+                // Skip the head
+                if (segment.X == head.X && segment.Y == head.Y)
+                    continue;
+
+                if (segment.X == nextPos.X && segment.Y == nextPos.Y)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // Helper function to find all safe directions
+        private List<int> FindSafeDirections()
+        {
+            List<int> safeDirections = new List<int>();
+
+            for (int i = 0; i < 8; i++)
+            {
+                if (IsSafeDirection((Direction)i))
                 {
                     safeDirections.Add(i);
+                }
+            }
 
-                    // Check if flag is visible in this direction
-                    if (currentState[i * 4 + 2] > 0.1)
+            return safeDirections;
+        }
+
+        // Helper function to calculate next position given a direction
+        private Point CalculateNextPosition(Point current, Direction direction)
+        {
+            Point next = new Point(current.X, current.Y);
+
+            switch (direction)
+            {
+                case Direction.Up:
+                    next.Y--;
+                    break;
+                case Direction.UpRight:
+                    next.X++;
+                    next.Y--;
+                    break;
+                case Direction.Right:
+                    next.X++;
+                    break;
+                case Direction.DownRight:
+                    next.X++;
+                    next.Y++;
+                    break;
+                case Direction.Down:
+                    next.Y++;
+                    break;
+                case Direction.DownLeft:
+                    next.X--;
+                    next.Y++;
+                    break;
+                case Direction.Left:
+                    next.X--;
+                    break;
+                case Direction.UpLeft:
+                    next.X--;
+                    next.Y--;
+                    break;
+            }
+
+            return next;
+        }
+
+        // Find the direction that is least likely to cause immediate problems
+        private int FindLeastDangerousDirection()
+        {
+            // Calculate danger score for each direction
+            double[] dangerScores = new double[8];
+
+            for (int i = 0; i < 8; i++)
+            {
+                Direction dir = (Direction)i;
+                Point head = gameEngine.Toboggan.Head;
+                Point nextPos = CalculateNextPosition(head, dir);
+
+                // High danger for out of bounds
+                if (nextPos.X < 0 || nextPos.X >= gridWidth ||
+                    nextPos.Y < 0 || nextPos.Y >= gridHeight)
+                {
+                    dangerScores[i] = 1000;
+                    continue;
+                }
+
+                // Calculate danger score - start with distance to flag (higher is worse)
+                double distanceToFlag = CalculateDistance(nextPos, gameEngine.Flag.Position);
+                dangerScores[i] = distanceToFlag;
+
+                // Add danger for obstacles and self
+                foreach (Obstacle obstacle in gameEngine.Obstacles)
+                {
+                    double obstacleDistance = CalculateDistance(nextPos, obstacle.Position);
+                    if (obstacleDistance < 2)
                     {
-                        flagDirections.Add(i);
+                        dangerScores[i] += (2 - obstacleDistance) * 20;
+                    }
+                }
+
+                foreach (Point segment in gameEngine.Toboggan.Segments)
+                {
+                    if (segment.X == head.X && segment.Y == head.Y)
+                        continue;
+
+                    double segmentDistance = CalculateDistance(nextPos, segment);
+                    if (segmentDistance < 2)
+                    {
+                        dangerScores[i] += (2 - segmentDistance) * 20;
                     }
                 }
             }
 
-            // Decision making based on analysis
-            if (flagDirections.Count > 0)
+            // Find direction with lowest danger
+            int safestDirection = 0;
+            double lowestDanger = dangerScores[0];
+
+            for (int i = 1; i < 8; i++)
             {
-                // Go toward flag if it's visible in a safe direction
-                return flagDirections[random.Next(flagDirections.Count)];
+                if (dangerScores[i] < lowestDanger)
+                {
+                    lowestDanger = dangerScores[i];
+                    safestDirection = i;
+                }
             }
 
-            if (safeDirections.Count > 0)
-            {
-                // Choose random safe direction
-                return safeDirections[random.Next(safeDirections.Count)];
-            }
-
-            // No safe directions, use neural network
-            double[] qValues = qNetwork.FeedForward(currentState);
-            return Array.IndexOf(qValues, qValues.Max());
+            return safestDirection;
         }
+
 
         /// <summary>
         /// Applies softmax function to convert values to probabilities
@@ -596,9 +726,7 @@ namespace TobogganGame
             {
                 framesSinceLastFlag = 0;
                 minDistanceToFlag = double.MaxValue;
-                successiveSuccesses++;
-                successiveFailures = 0;
-                obstacleAvoidanceMode = false;
+                
             }
             else
             {
@@ -610,15 +738,7 @@ namespace TobogganGame
                 minDistanceToFlag = Math.Min(minDistanceToFlag, distanceToFlag);
             }
 
-            // Update curriculum learning state if game ended without collecting flag
-            if (hitObstacle || gameEngine.IsGameOver)
-            {
-                successiveFailures++;
-                successiveSuccesses = 0;
-
-                // Switch to obstacle avoidance mode after repeated failures
-                obstacleAvoidanceMode = successiveFailures >= 3;
-            }
+          
         }
 
         /// <summary>
@@ -1120,6 +1240,57 @@ namespace TobogganGame
             ref double totalLoss,
             ref int validExamples)
         {
+
+            double[] stateArray = experience.State;
+
+           
+            int optimalAction = GetDirectedFlagAction();  
+
+            double multiplier = 1.0;
+
+          
+            if (experience.Action == optimalAction)
+            {
+                multiplier = 1.20; 
+            }
+            else if (experience.Action == (optimalAction + 1) % 8 ||
+                     experience.Action == (optimalAction - 1 + 8) % 8)
+            {
+                multiplier = 1.15; 
+            }
+            else if (experience.Action == (optimalAction + 2) % 8 ||
+                     experience.Action == (optimalAction - 2 + 8) % 8)
+            {
+                multiplier = 1.05;  
+            }
+
+            
+            int oppositeAction = (optimalAction + 4) % 8;
+            if (experience.Action == oppositeAction)
+            {
+                multiplier = 0.85;  
+            }
+            else if (experience.Action == (oppositeAction + 1) % 8 ||
+                     experience.Action == (oppositeAction - 1 + 8) % 8)
+            {
+                multiplier = 0.9;  
+            }
+
+            
+            if (experience.Reward > 0)
+            {
+                targetQ *= multiplier; 
+            }
+            else if (experience.Reward < 0 && multiplier < 1.0)
+            {
+                targetQ *= (multiplier * 0.9); 
+            }
+
+            if (experience.Reward > 20.0 && experience.Action == optimalAction)
+            {
+                targetQ *= 1.1; 
+            }
+
             // Train network
             qNetwork.TrainQ(experience.State, experience.Action, targetQ);
 
@@ -1276,20 +1447,44 @@ namespace TobogganGame
             Point head = gameEngine.Toboggan.Head;
             Point flag = gameEngine.Flag.Position;
 
-            // Apply stuck penalty if applicable
-            reward += CalculateStuckPenalty();
+            // Strong negative reward for hitting obstacle
+            if (hitObstacle)
+            {
+                reward -= 25.0;
+            }
 
-            // Calculate outcome rewards
-            reward += CalculateOutcomeReward(collectedFlag, hitObstacle);
+            // Strong positive reward for collecting flag
+            if (collectedFlag)
+            {
+                reward += 75.0;
+            }
+            else
+            {
+                // Distance-based reward
+                double currentDistance = CalculateDistance(head, flag);
+                double previousDistance = distanceToFlagPrevious;
 
-            // Calculate distance-based rewards
-            reward += CalculateDistanceReward(head, flag);
+                // Clear signal for movement toward/away from flag
+                if (currentDistance < previousDistance)
+                {
+                    // Reward for getting closer to flag
+                    double improvement = previousDistance - currentDistance;
+                    // Scale reward by how much closer we got
+                    reward += 5.0 * improvement;
+                }
+                else if (currentDistance > previousDistance)
+                {
+                    // Smaller penalty for moving away from flag
+                    double regression = currentDistance - previousDistance;
+                    reward -= 2.0 * regression;
+                }
 
-            // Calculate proximity bonuses
-            reward += CalculateProximityBonus(CalculateDistance(head, flag));
-
-            // Apply time penalty
-            reward += CalculateTimePenalty();
+                // Give small time penalty to encourage flag collection
+                if (framesSinceLastFlag > 50)
+                {
+                    reward -= 0.2;
+                }
+            }
 
             // Update distance for next calculation
             distanceToFlagPrevious = CalculateDistance(head, flag);
@@ -1586,48 +1781,10 @@ namespace TobogganGame
         /// </summary>
         private void UpdateState()
         {
+            // Cast rays and fill the first 32 inputs (8 directions x 4 values per ray)
             CastRays();
-            AddExtraStateFeatures();
         }
 
-        /// <summary>
-        /// Adds extra features to state representation
-        /// </summary>
-        private void AddExtraStateFeatures()
-        {
-            Point head = gameEngine.Toboggan.Head;
-            Point flag = gameEngine.Flag.Position;
-
-            // Calculate normalized values
-            double[] stateFeatures = new double[8];
-
-            // Distance to flag (normalized)
-            double maxPossibleDistance = Math.Sqrt(gridWidth * gridWidth + gridHeight * gridHeight);
-            stateFeatures[0] = CalculateDistance(head, flag) / maxPossibleDistance;
-
-            // Flag direction vector (normalized)
-            stateFeatures[1] = (flag.X - head.X) / (double)gridWidth;
-            stateFeatures[2] = (flag.Y - head.Y) / (double)gridHeight;
-
-            // Board dimensions (normalized)
-            stateFeatures[3] = gridWidth / 50.0;
-            stateFeatures[4] = gridHeight / 50.0;
-
-            // Toboggan length (normalized)
-            stateFeatures[5] = gameEngine.Toboggan.Segments.Count / 20.0;
-
-            // Stuck detector
-            stateFeatures[6] = IsStuck() ? 1.0 : 0.0;
-
-            // Time since last flag (normalized with sigmoid)
-            stateFeatures[7] = 2.0 / (1.0 + Math.Exp(-framesSinceLastFlag / 50.0)) - 1.0;
-
-            // Copy values to state array
-            for (int i = 0; i < stateFeatures.Length; i++)
-            {
-                currentState[32 + i] = stateFeatures[i];
-            }
-        }
 
         /// <summary>
         /// Casts rays in all directions for environment sensing

@@ -29,7 +29,8 @@ namespace TobogganGame
         public DateTime TrainingStartTime { get; private set; } = DateTime.Now;
 
         // Maximum Loss allowed for display - prevents extreme values disrupting UI
-        private const double MaxDisplayLoss = 50.0;
+        private const double MaxDisplayLoss = 500.0;
+        private const double MaxStoredLoss = 500.0;
 
         // Historical tracking of min/max loss for scaling
         public double MinLoss { get; private set; } = double.MaxValue;
@@ -174,7 +175,7 @@ namespace TobogganGame
 
                             // Update min/max with higher cap
                             if (lossValue < MinLoss) MinLoss = lossValue;
-                            if (lossValue > MaxLoss) MaxLoss = Math.Min(lossValue, 200.0);
+                            if (lossValue > MaxLoss) MaxLoss = Math.Min(lossValue, MaxStoredLoss);
                         }
                     }
 
@@ -242,60 +243,75 @@ namespace TobogganGame
         }
 
         /// <summary>
-        /// Adds a new loss value to the history with adaptive smoothing
+        /// Adds a new loss value to the history with improved adaptive smoothing
         /// </summary>
         /// <param name="loss">The loss value to record</param>
         public void AddLossValue(double loss)
         {
             // Only add valid loss values
-            if (!double.IsNaN(loss) && !double.IsInfinity(loss))
+            if (double.IsNaN(loss) || double.IsInfinity(loss))
             {
-                // Apply adaptive smoothing with previous value if available
-                if (LossHistory.Count > 0)
-                {
-                    double previous = LossHistory.Last();
+                // Skip invalid loss values completely
+                return;
+            }
 
-                    // Dynamic smoothing factor based on magnitude of change
+            // Apply a reasonable maximum limit to prevent extreme values
+            loss = Math.Min(Math.Max(0.0001, loss), MaxStoredLoss);
+
+            // If history exists, apply improved smoothing
+            if (LossHistory.Count > 0)
+            {
+                double previous = LossHistory[LossHistory.Count - 1];
+
+                // Handle cases of large jumps between very high and very low values
+                if (previous < 0.1 && loss > 10.0)
+                {
+                    // Going from very low to high - more gradual increase
+                    loss = previous * 3.0; // Triple instead of jumping straight to high value
+                }
+                else if (previous > 10.0 && loss < 0.1)
+                {
+                    // Going from very high to low - more gradual decrease
+                    loss = previous / 3.0; // Reduce by 2/3 instead of jumping straight to low value
+                }
+                else
+                {
+                    // Normal smoothing based on magnitude of change
+                    double ratio = loss / previous;
                     double smoothingFactor;
 
-                    if (loss > previous * 5)
+                    if (ratio > 5.0 || ratio < 0.2)
                     {
-                        // Very large jump, minimal impact (2%)
-                        smoothingFactor = 0.02;
-                    }
-                    else if (loss > previous * 3)
-                    {
-                        // Large jump, small impact (5%)
+                        // Very large change - minimal impact (5%)
                         smoothingFactor = 0.05;
                     }
-                    else if (loss > previous * 2)
+                    else if (ratio > 2.0 || ratio < 0.5)
                     {
-                        // Medium jump (10%)
+                        // Moderate change - small impact (10%)
                         smoothingFactor = 0.1;
                     }
                     else
                     {
-                        // Reasonable change (20%)
+                        // Small change - normal impact (20%)
                         smoothingFactor = 0.2;
                     }
 
                     // Apply smoothing
                     loss = (smoothingFactor * loss) + ((1 - smoothingFactor) * previous);
                 }
-
-                // Limit loss value before adding to history
-                loss = Math.Min(loss, 200.0);
-
-                LossHistory.Add(loss);
-
-                // Update min/max for scaling
-                if (loss < MinLoss) MinLoss = loss;
-                if (loss > MaxLoss) MaxLoss = Math.Min(loss, 200.0);
-
-                // Trim history if needed
-                if (LossHistory.Count > 1000)
-                    LossHistory.RemoveAt(0);
             }
+
+            // Add to history with final bounds check
+            loss = Math.Min(Math.Max(0.0001, loss), MaxStoredLoss);
+            LossHistory.Add(loss);
+
+            // Update min/max for scaling
+            if (loss < MinLoss) MinLoss = loss;
+            if (loss > MaxLoss) MaxLoss = Math.Min(loss, MaxStoredLoss);
+
+            // Trim history if needed
+            if (LossHistory.Count > 1000)
+                LossHistory.RemoveAt(0);
         }
 
         /// <summary>
@@ -313,7 +329,7 @@ namespace TobogganGame
         }
 
         /// <summary>
-        /// Gets the average loss from recent training steps with outlier rejection
+        /// Gets the average loss from recent training steps with improved stability
         /// </summary>
         /// <param name="count">Number of recent steps to average</param>
         /// <returns>Average loss value</returns>
@@ -322,33 +338,47 @@ namespace TobogganGame
             if (LossHistory.Count == 0)
                 return 0;
 
+            // Limit count to available history
             count = Math.Min(count, LossHistory.Count);
 
             // Get recent loss values
-            var recentLosses = LossHistory.Skip(LossHistory.Count - count).ToList();
+            List<double> recentLosses = new List<double>();
+            int startIndex = Math.Max(0, LossHistory.Count - count);
+            for (int i = startIndex; i < LossHistory.Count; i++)
+            {
+                recentLosses.Add(LossHistory[i]);
+            }
 
-            // Filter out any extreme values
-            var validLosses = recentLosses
-                .Where(l => !double.IsNaN(l) && !double.IsInfinity(l) && l < 200.0)
-                .ToList();
+            // Basic filtering - remove any extreme values
+            List<double> validLosses = new List<double>();
+            foreach (double l in recentLosses)
+            {
+                if (!double.IsNaN(l) && !double.IsInfinity(l) && l <= MaxStoredLoss)
+                {
+                    validLosses.Add(l);
+                }
+            }
 
             if (validLosses.Count == 0)
                 return 0;
 
-            // Compute average with outlier rejection
-            double mean = validLosses.Average();
-            double stdDev = Math.Sqrt(validLosses.Select(l => Math.Pow(l - mean, 2)).Average());
+            // Simple trimmed mean for stability
+            // Sort values and discard the top and bottom 10%
+            validLosses.Sort();
+            int trimCount = Math.Max(1, validLosses.Count / 10); // Trim 10% from each end
 
-            // Keep values within 4 standard deviations of the mean
-            var normalizedLosses = validLosses
-                .Where(l => Math.Abs(l - mean) <= 4 * stdDev)
-                .ToList();
+            // Take the middle part after trimming
+            List<double> trimmedValues = new List<double>();
+            for (int i = trimCount; i < validLosses.Count - trimCount; i++)
+            {
+                trimmedValues.Add(validLosses[i]);
+            }
 
-            if (normalizedLosses.Count == 0)
-                return Math.Min(mean, MaxDisplayLoss);
+            // Use the trimmed values if we have enough, otherwise use all valid values
+            double result = trimmedValues.Count > 0 ?
+                trimmedValues.Average() : validLosses.Average();
 
-            double result = normalizedLosses.Average();
-
+            // For display purposes, limit the maximum value
             return Math.Min(result, MaxDisplayLoss);
         }
 
@@ -407,6 +437,72 @@ namespace TobogganGame
         {
             TimeSpan elapsed = DateTime.Now - TrainingStartTime;
             return elapsed.TotalHours;
+        }
+
+        /// <summary>
+        /// Check for problematic patterns in loss history and fix them
+        /// </summary>
+        public void CheckLossPatternAndReset()
+        {
+            if (LossHistory.Count < 10) return;
+
+            // Get last 10 values
+            List<double> recent = new List<double>();
+            int startIndex = Math.Max(0, LossHistory.Count - 10);
+            for (int i = startIndex; i < LossHistory.Count; i++)
+            {
+                recent.Add(LossHistory[i]);
+            }
+
+            // Check if we have an extreme pattern (alternating high/low values)
+            bool hasExtremeSwitching = false;
+            for (int i = 1; i < recent.Count; i++)
+            {
+                if ((recent[i] < 0.1 && recent[i - 1] > 10.0) ||
+                    (recent[i] > 10.0 && recent[i - 1] < 0.1))
+                {
+                    hasExtremeSwitching = true;
+                    break;
+                }
+            }
+
+            // If detected, smooth out the problematic values
+            if (hasExtremeSwitching)
+            {
+                // Calculate stable average from earlier history
+                double avgStable = 1.0; // Default value
+                int stableCount = 0;
+
+                // Get average from earlier history
+                int earlierStartIndex = Math.Max(0, LossHistory.Count - 30);
+                int earlierEndIndex = Math.Max(0, LossHistory.Count - 10);
+
+                double sum = 0.0;
+                for (int i = earlierStartIndex; i < earlierEndIndex; i++)
+                {
+                    sum += LossHistory[i];
+                    stableCount++;
+                }
+
+                if (stableCount > 0)
+                {
+                    avgStable = sum / stableCount;
+                }
+
+                // Replace extreme values with more reasonable ones
+                for (int i = LossHistory.Count - 10; i < LossHistory.Count; i++)
+                {
+                    if (i >= 0 && i < LossHistory.Count)
+                    {
+                        // If current value is extreme compared to the stable average
+                        if (LossHistory[i] < avgStable * 0.1 || LossHistory[i] > avgStable * 10.0)
+                        {
+                            // Replace with a value closer to the stable average
+                            LossHistory[i] = (LossHistory[i] * 0.2) + (avgStable * 0.8);
+                        }
+                    }
+                }
+            }
         }
     }
 }
