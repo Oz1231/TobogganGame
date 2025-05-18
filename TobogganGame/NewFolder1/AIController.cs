@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
 using System.IO;
 
 namespace TobogganGame
@@ -35,8 +37,8 @@ namespace TobogganGame
 
         private const double DiscountFactor = 0.95;
         private const double InitialExplorationRate = 0.99; 
-        private const double ExplorationRateDecay = 0.9998;
-        private const double MinExplorationRate = 0.1;      
+        private const double ExplorationRateDecay = 0.9999;
+        private const double MinExplorationRate = 0.15;      
 
         // Target network updates
         private const double TargetNetworkTau = 0.05;
@@ -45,9 +47,9 @@ namespace TobogganGame
 
         // Experience replay buffer
         private List<Experience> replayBuffer;
-        private const int ReplayBufferCapacity = 10000;
-        private const int MinBufferSizeForTraining = 1000;
-        private const int BatchSize = 128;
+        private const int ReplayBufferCapacity = 20000;
+        private const int MinBufferSizeForTraining = 2000;
+        private const int BatchSize = 192;
 
         // Learning frequency control
         private int frameCounter = 0;
@@ -85,6 +87,11 @@ namespace TobogganGame
         // Save/load file paths
         private const string NetworkWeightsFile = "improved_nn_weights.dat";
         private const string StatsFile = "improved_nn_stats.dat";
+        private const string BufferFile = "replay_buffer.dat";
+
+        // Buffer saving settings
+        private const int AutoSaveInterval = 50; 
+        private int gamesSinceLastBufferSave = 0;
 
         // Training statistics
         public LearningStats Stats { get; private set; } = new LearningStats();
@@ -131,6 +138,7 @@ namespace TobogganGame
             // Try to load saved weights and stats
             bool weightsLoaded = qNetwork.LoadWeights(NetworkWeightsFile);
             bool statsLoaded = Stats.LoadFromFile(StatsFile);
+            bool bufferLoaded = LoadReplayBuffer();
 
             // If only one type was loaded, reset both for consistency
             if (weightsLoaded != statsLoaded)
@@ -157,6 +165,7 @@ namespace TobogganGame
 
             // Calculate initial state
             UpdateState();
+            AppDomain.CurrentDomain.ProcessExit += (sender, e) => SaveAll();
         }
 
         /// <summary>
@@ -185,9 +194,10 @@ namespace TobogganGame
             minDistanceToFlag = double.MaxValue;
             currentEpisodeReward = 0;
             recentQValues.Clear();
+            gamesSinceLastBufferSave = 0;
 
             // Delete saved files
-            TryDeleteFiles(new[] { NetworkWeightsFile, StatsFile });
+            TryDeleteFiles(new[] { NetworkWeightsFile, StatsFile, BufferFile });
         }
 
         /// <summary>
@@ -224,6 +234,7 @@ namespace TobogganGame
             {
                 SaveNetworkWeights();
                 SaveLearningStats();
+                SaveReplayBuffer();
             }
 
             // Adjust learning frequency
@@ -885,6 +896,14 @@ namespace TobogganGame
             // Record game result for statistics
             Stats.RecordGameResult(gameEngine.Score, currentEpisodeReward);
 
+            // Increment counter and check if we should save buffer
+            gamesSinceLastBufferSave++;
+            if (TrainingMode && gamesSinceLastBufferSave >= AutoSaveInterval)
+            {
+                SaveReplayBuffer();
+                gamesSinceLastBufferSave = 0;
+            }
+
             // Adjust learning frequency based on recent performance
             AdjustLearningFrequency();
 
@@ -941,7 +960,6 @@ namespace TobogganGame
                 Stats.ExplorationRate = currentMinExploration;
             }
         }
-
         /// <summary>
         /// Calculates the appropriate minimum exploration rate
         /// </summary>
@@ -976,6 +994,7 @@ namespace TobogganGame
         {
             double recentAvgScore = Stats.GetRecentAverageScore(20);
 
+            // תנאי מוקדם - אם הציון הממוצע ירד משמעותית
             if (Stats.TotalGamesPlayed > 100 &&
                 recentAvgScore < Stats.GetRecentAverageScore(50) * 0.7 &&
                 Stats.ExplorationRate < 0.4)
@@ -983,6 +1002,7 @@ namespace TobogganGame
                 return true;
             }
 
+            // תנאי תקיעות מוקדמת - אם אין התקדמות בציון למרות משחקים רבים
             if (Stats.TotalGamesPlayed > 300 &&
                 recentAvgScore < 1.0 &&
                 Stats.ExplorationRate < 0.3)
@@ -990,9 +1010,10 @@ namespace TobogganGame
                 return true;
             }
 
-            return Stats.TotalGamesPlayed > 500 && 
+            // התנאי המקורי, אבל מופעל מוקדם יותר
+            return Stats.TotalGamesPlayed > 500 && // שונה מ-1000
                    recentAvgScore < 0.5 &&
-                   Stats.ExplorationRate < 0.25; 
+                   Stats.ExplorationRate < 0.25; // קצת יותר מהמקורי
         }
 
         /// <summary>
@@ -2201,6 +2222,7 @@ namespace TobogganGame
         {
             SaveNetworkWeights();
             SaveLearningStats();
+            SaveReplayBuffer();
         }
 
         /// <summary>
@@ -2210,6 +2232,53 @@ namespace TobogganGame
         public int GetReplayBufferSize()
         {
             return replayBuffer.Count;
+        }
+
+        /// <summary>
+        /// Saves replay buffer to file
+        /// </summary>
+        public void SaveReplayBuffer()
+        {
+            try
+            {
+                using (FileStream fs = new FileStream(BufferFile, FileMode.Create))
+                {
+                    BinaryFormatter formatter = new BinaryFormatter();
+                    formatter.Serialize(fs, replayBuffer);
+                }
+                Console.WriteLine($"Replay buffer saved ({replayBuffer.Count} experiences)");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving replay buffer: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Loads replay buffer from file
+        /// </summary>
+        /// <returns>True if buffer was loaded successfully, false otherwise</returns>
+        public bool LoadReplayBuffer()
+        {
+            try
+            {
+                if (File.Exists(BufferFile))
+                {
+                    using (FileStream fs = new FileStream(BufferFile, FileMode.Open))
+                    {
+                        BinaryFormatter formatter = new BinaryFormatter();
+                        replayBuffer = (List<Experience>)formatter.Deserialize(fs);
+                    }
+                    Console.WriteLine($"Replay buffer loaded ({replayBuffer.Count} experiences)");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading replay buffer: {ex.Message}");
+                replayBuffer = new List<Experience>();
+            }
+            return false;
         }
 
         /// <summary>

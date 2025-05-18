@@ -1,8 +1,12 @@
-﻿namespace TobogganGame
+﻿using System;
+
+namespace TobogganGame
 {
     /// <summary>
     /// A record of a state-action-reward transition for Q-learning
     /// </summary>
+    /// 
+    [Serializable]
     public class Experience
     {
         public double[] State { get; set; }
