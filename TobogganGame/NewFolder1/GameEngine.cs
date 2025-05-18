@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 namespace TobogganGame
 {
@@ -36,7 +37,7 @@ namespace TobogganGame
         {
             new Point(5, 5),
             new Point(22, 5),
-            new Point(14, 14),
+            new Point(14, 16),
             new Point(8, 18),
             new Point(20, 20),
             new Point(3, 22),
@@ -63,6 +64,19 @@ namespace TobogganGame
             new Point(26, 18),
             new Point(20, 24),
             new Point(11, 22)
+        };
+
+        // Predefined directions for adjacent obstacles (constant for each obstacle)
+        private static readonly Point[] adjacentDirections = new Point[]
+        {
+            new Point(1, 0),    // Right
+            new Point(0, 1),    // Down
+            new Point(-1, 0),   // Left
+            new Point(0, -1),   // Up
+            new Point(1, 1),    // Down-Right
+            new Point(-1, 1),   // Down-Left
+            new Point(-1, -1),  // Up-Left
+            new Point(1, -1)    // Up-Right
         };
 
         // Property accessors
@@ -114,23 +128,185 @@ namespace TobogganGame
         /// </summary>
         private void GenerateFixedObstacles()
         {
-            // Generate rocks
+            // Generate rocks with adjacent rocks
             for (int i = 0; i < ObstaclesPerType && i < rockPositions.Length; i++)
             {
+                // Add primary rock
                 obstacles.Add(new Obstacle(rockPositions[i], ObstacleType.Rock));
+
+                // Add a second adjacent rock (using consistent direction based on index)
+                Point direction1 = adjacentDirections[i % adjacentDirections.Length];
+                Point adjacentPosition1 = new Point(
+                    rockPositions[i].X + direction1.X,
+                    rockPositions[i].Y + direction1.Y
+                );
+
+                // Only add if the position is valid and doesn't overlap with existing obstacles
+                if (IsValidPosition(adjacentPosition1) && !OverlapsWithObstacles(adjacentPosition1))
+                {
+                    obstacles.Add(new Obstacle(adjacentPosition1, ObstacleType.Rock));
+
+                    // Add a third adjacent rock (using next consistent direction)
+                    Point direction2 = adjacentDirections[(i + 1) % adjacentDirections.Length];
+                    Point adjacentPosition2 = new Point(
+                        adjacentPosition1.X + direction2.X,
+                        adjacentPosition1.Y + direction2.Y
+                    );
+
+                    // Only add if the position is valid and doesn't overlap with existing obstacles
+                    if (IsValidPosition(adjacentPosition2) && !OverlapsWithObstacles(adjacentPosition2))
+                    {
+                        obstacles.Add(new Obstacle(adjacentPosition2, ObstacleType.Rock));
+                    }
+                }
+
+                // Try another direction for the third rock if the second wasn't successful
+                // Use a consistent direction based on the obstacle's index
+                if (obstacles.Count < i * 3 + 3)
+                {
+                    Point direction3 = adjacentDirections[(i + 2) % adjacentDirections.Length];
+                    Point adjacentPosition3 = new Point(
+                        rockPositions[i].X + direction3.X,
+                        rockPositions[i].Y + direction3.Y
+                    );
+
+                    // Only add if the position is valid and doesn't overlap
+                    if (IsValidPosition(adjacentPosition3) && !OverlapsWithObstacles(adjacentPosition3))
+                    {
+                        obstacles.Add(new Obstacle(adjacentPosition3, ObstacleType.Rock));
+                    }
+                }
             }
 
-            // Generate trees
+            // Generate trees with adjacent trees
             for (int i = 0; i < ObstaclesPerType && i < treePositions.Length; i++)
             {
+                // Add primary tree
                 obstacles.Add(new Obstacle(treePositions[i], ObstacleType.Tree));
+
+                // Add a second adjacent tree (using consistent direction based on index)
+                Point direction1 = adjacentDirections[(i + 3) % adjacentDirections.Length]; // Offset for variety
+                Point adjacentPosition1 = new Point(
+                    treePositions[i].X + direction1.X,
+                    treePositions[i].Y + direction1.Y
+                );
+
+                // Only add if the position is valid and doesn't overlap with existing obstacles
+                if (IsValidPosition(adjacentPosition1) && !OverlapsWithObstacles(adjacentPosition1))
+                {
+                    obstacles.Add(new Obstacle(adjacentPosition1, ObstacleType.Tree));
+
+                    // Add a third adjacent tree (using next consistent direction)
+                    Point direction2 = adjacentDirections[(i + 4) % adjacentDirections.Length];
+                    Point adjacentPosition2 = new Point(
+                        adjacentPosition1.X + direction2.X,
+                        adjacentPosition1.Y + direction2.Y
+                    );
+
+                    // Only add if the position is valid and doesn't overlap with existing obstacles
+                    if (IsValidPosition(adjacentPosition2) && !OverlapsWithObstacles(adjacentPosition2))
+                    {
+                        obstacles.Add(new Obstacle(adjacentPosition2, ObstacleType.Tree));
+                    }
+                }
+
+                // Try another direction for the third tree if the second wasn't successful
+                if (obstacles.Count < (ObstaclesPerType + i * 3 + 3))
+                {
+                    Point direction3 = adjacentDirections[(i + 5) % adjacentDirections.Length];
+                    Point adjacentPosition3 = new Point(
+                        treePositions[i].X + direction3.X,
+                        treePositions[i].Y + direction3.Y
+                    );
+
+                    // Only add if the position is valid and doesn't overlap
+                    if (IsValidPosition(adjacentPosition3) && !OverlapsWithObstacles(adjacentPosition3))
+                    {
+                        obstacles.Add(new Obstacle(adjacentPosition3, ObstacleType.Tree));
+                    }
+                }
             }
 
-            // Generate ice hills
+            // Generate ice hills with adjacent ice hills
             for (int i = 0; i < ObstaclesPerType && i < iceHillPositions.Length; i++)
             {
+                // Add primary ice hill
                 obstacles.Add(new Obstacle(iceHillPositions[i], ObstacleType.IceHill));
+
+                // Add a second adjacent ice hill (using consistent direction based on index)
+                Point direction1 = adjacentDirections[(i + 6) % adjacentDirections.Length]; // Different offset
+                Point adjacentPosition1 = new Point(
+                    iceHillPositions[i].X + direction1.X,
+                    iceHillPositions[i].Y + direction1.Y
+                );
+
+                // Only add if the position is valid and doesn't overlap with existing obstacles
+                if (IsValidPosition(adjacentPosition1) && !OverlapsWithObstacles(adjacentPosition1))
+                {
+                    obstacles.Add(new Obstacle(adjacentPosition1, ObstacleType.IceHill));
+
+                    // Add a third adjacent ice hill (using next consistent direction)
+                    Point direction2 = adjacentDirections[(i + 7) % adjacentDirections.Length];
+                    Point adjacentPosition2 = new Point(
+                        adjacentPosition1.X + direction2.X,
+                        adjacentPosition1.Y + direction2.Y
+                    );
+
+                    // Only add if the position is valid and doesn't overlap with existing obstacles
+                    if (IsValidPosition(adjacentPosition2) && !OverlapsWithObstacles(adjacentPosition2))
+                    {
+                        obstacles.Add(new Obstacle(adjacentPosition2, ObstacleType.IceHill));
+                    }
+                }
+
+                // Try another direction for the third ice hill if the second wasn't successful
+                if (obstacles.Count < (ObstaclesPerType * 2 + i * 3 + 3))
+                {
+                    Point direction3 = adjacentDirections[(i + 1) % adjacentDirections.Length]; // Different pattern
+                    Point adjacentPosition3 = new Point(
+                        iceHillPositions[i].X + direction3.X,
+                        iceHillPositions[i].Y + direction3.Y
+                    );
+
+                    // Only add if the position is valid and doesn't overlap
+                    if (IsValidPosition(adjacentPosition3) && !OverlapsWithObstacles(adjacentPosition3))
+                    {
+                        obstacles.Add(new Obstacle(adjacentPosition3, ObstacleType.IceHill));
+                    }
+                }
             }
+        }
+
+        /// <summary>
+        /// Checks if a position is within the valid game grid
+        /// </summary>
+        private bool IsValidPosition(Point position)
+        {
+            return position.X >= 0 && position.X < gridWidth &&
+                   position.Y >= 0 && position.Y < gridHeight;
+        }
+
+        /// <summary>
+        /// Checks if a position overlaps with any existing obstacles
+        /// </summary>
+        private bool OverlapsWithObstacles(Point position)
+        {
+            // Check if position overlaps with any toboggan segment
+            bool overlapsWithToboggan = false;
+            if (toboggan != null)
+            {
+                overlapsWithToboggan = toboggan.Segments.Any(segment =>
+                    segment.X == position.X && segment.Y == position.Y);
+            }
+
+            if (overlapsWithToboggan)
+            {
+                return true;
+            }
+
+            // Check if position overlaps with any existing obstacle
+            return obstacles.Any(obstacle =>
+                obstacle.Position.X == position.X && obstacle.Position.Y == position.Y);
         }
 
         /// <summary>
@@ -209,7 +385,7 @@ namespace TobogganGame
         /// Updates the game state for one tick
         /// </summary>
         /// <returns>True if flag was collected, false otherwise</returns>
-        
+
         public bool Update()
         {
             // Early exit if game is over

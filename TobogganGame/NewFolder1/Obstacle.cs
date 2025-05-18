@@ -25,6 +25,9 @@ namespace TobogganGame
         // Type of obstacle
         private ObstacleType type;
 
+        // Size multiplier for all obstacles
+        private const float SizeMultiplier = 0.7f; // 70% of original size
+
         /// <summary>
         /// Gets the position of the obstacle
         /// </summary>
@@ -55,12 +58,20 @@ namespace TobogganGame
         {
             int x = position.X * cellSize;
             int y = position.Y * cellSize;
-            Rectangle rect = new Rectangle(x + 1, y + 1, cellSize - 2, cellSize - 2);
+
+            // Calculate reduced size
+            int adjustedSize = (int)(cellSize * SizeMultiplier);
+
+            // Calculate offset to center in cell
+            int offset = (cellSize - adjustedSize) / 2;
+
+            // Adjusted rectangle that's smaller and centered
+            Rectangle rect = new Rectangle(x + offset, y + offset, adjustedSize - 2, adjustedSize - 2);
 
             switch (type)
             {
                 case ObstacleType.Rock:
-                    // Draw a gray rock
+                    // Draw a  gray rock
                     using (SolidBrush brush = new SolidBrush(Color.DarkGray))
                     {
                         g.FillEllipse(brush, rect);
@@ -69,35 +80,42 @@ namespace TobogganGame
                     {
                         g.DrawEllipse(pen, rect);
 
-                        // Add some rock details
-                        int detailSize = cellSize / 4;
-                        g.DrawLine(pen, x + detailSize, y + detailSize,
-                            x + 2 * detailSize, y + detailSize);
-                        g.DrawLine(pen, x + cellSize - detailSize - 1, y + cellSize - detailSize - 1,
-                            x + cellSize - 2 * detailSize - 1, y + cellSize - detailSize - 1);
+                        // Add some rock details - scaled down
+                        int detailSize = adjustedSize / 4;
+                        g.DrawLine(pen,
+                            x + offset + detailSize,
+                            y + offset + detailSize,
+                            x + offset + 2 * detailSize,
+                            y + offset + detailSize);
+
+                        g.DrawLine(pen,
+                            x + offset + adjustedSize - detailSize - 1,
+                            y + offset + adjustedSize - detailSize - 1,
+                            x + offset + adjustedSize - 2 * detailSize - 1,
+                            y + offset + adjustedSize - detailSize - 1);
                     }
                     break;
 
                 case ObstacleType.Tree:
                     // Draw a tree with trunk and green top
-                    int trunkWidth = cellSize / 3;
-                    int trunkHeight = cellSize / 2;
+                    int trunkWidth = adjustedSize / 3;
+                    int trunkHeight = adjustedSize / 2;
 
                     // Draw trunk
                     using (SolidBrush brush = new SolidBrush(Color.SaddleBrown))
                     {
                         g.FillRectangle(brush,
-                            x + (cellSize - trunkWidth) / 2,
-                            y + cellSize - trunkHeight,
+                            x + offset + (adjustedSize - trunkWidth) / 2,
+                            y + offset + adjustedSize - trunkHeight,
                             trunkWidth, trunkHeight);
                     }
 
                     // Draw tree top (triangle)
                     Point[] treeTop = new Point[]
                     {
-                        new Point(x + cellSize / 2, y + 1),
-                        new Point(x + 1, y + cellSize - trunkHeight),
-                        new Point(x + cellSize - 1, y + cellSize - trunkHeight)
+                        new Point(x + offset + adjustedSize / 2, y + offset + 1),
+                        new Point(x + offset + 1, y + offset + adjustedSize - trunkHeight),
+                        new Point(x + offset + adjustedSize - 1, y + offset + adjustedSize - trunkHeight)
                     };
 
                     using (SolidBrush brush = new SolidBrush(Color.ForestGreen))
@@ -117,13 +135,13 @@ namespace TobogganGame
 
                     try
                     {
-                        // Calculate a smaller area within the cell
-                        int padding = cellSize / 6;  // Increased padding to make hills smaller
-                        int smallerSize = cellSize - (padding * 2);
+                        // Calculate a smaller area within the adjusted cell
+                        int padding = adjustedSize / 6;
+                        int smallerSize = adjustedSize - (padding * 2);
 
                         // Adjust x and y for the padding
-                        int sx = x + padding;
-                        int sy = y + padding;
+                        int sx = x + offset + padding;
+                        int sy = y + offset + padding;
 
                         // Create multiple ice spikes for a more threatening appearance
                         // Main central spike (taller)
@@ -174,7 +192,7 @@ namespace TobogganGame
                         }
 
                         // First add a thicker darker blue outline
-                        using (Pen darkOutlinePen = new Pen(Color.FromArgb(10, 80, 150), 2f))
+                        using (Pen darkOutlinePen = new Pen(Color.FromArgb(10, 80, 150), 1.5f)) // Reduced line width
                         {
                             g.DrawPolygon(darkOutlinePen, mainSpike);
                             g.DrawPolygon(darkOutlinePen, leftSpike);
@@ -182,7 +200,7 @@ namespace TobogganGame
                         }
 
                         // Then add a thinner cyan/blue outline for contrast
-                        using (Pen blueOutlinePen = new Pen(Color.FromArgb(80, 180, 255), 1f))
+                        using (Pen blueOutlinePen = new Pen(Color.FromArgb(80, 180, 255), 0.8f)) // Reduced line width
                         {
                             g.DrawPolygon(blueOutlinePen, mainSpike);
                             g.DrawPolygon(blueOutlinePen, leftSpike);
@@ -190,7 +208,7 @@ namespace TobogganGame
                         }
 
                         // Add more prominent white highlights
-                        using (Pen highlightPen = new Pen(Color.White, 1.5f))
+                        using (Pen highlightPen = new Pen(Color.White, 1.0f)) // Reduced line width
                         {
                             // Highlight on main spike
                             g.DrawLine(highlightPen,

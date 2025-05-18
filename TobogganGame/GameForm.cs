@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace TobogganGame
@@ -20,10 +21,10 @@ namespace TobogganGame
         private AIController aiController;
 
         // Game settings
-        private const int CellSize = 22;
-        private const int GridWidth = 28;
+        private const int CellSize = 25;
+        private const int GridWidth = 30;
         private const int GridHeight = 26;
-        private const int InitialGameSpeed = 120;
+        private const int InitialGameSpeed = 100;
 
         // Game speed settings
         private const int MaxSpeed = 100;
@@ -31,7 +32,7 @@ namespace TobogganGame
         private const int MaxGameInterval = 250;
 
         // UI elements
-        private Timer gameTimer;
+        private System.Windows.Forms.Timer gameTimer;
         private Panel controlPanel;
         private CheckBox aiControlCheckbox;
         private CheckBox showRaysCheckbox;
@@ -57,7 +58,7 @@ namespace TobogganGame
         private bool showPerformanceGraph = true;
 
         // Timer for graph updates
-        private Timer graphUpdateTimer;
+        private System.Windows.Forms.Timer graphUpdateTimer;
         private const int GraphUpdateInterval = 1000;
 
         // Track currently pressed keys for diagonal movement
@@ -87,7 +88,7 @@ namespace TobogganGame
         /// </summary>
         private void SetupGraphUpdateTimer()
         {
-            graphUpdateTimer = new Timer
+            graphUpdateTimer = new System.Windows.Forms.Timer
             {
                 Interval = GraphUpdateInterval
             };
@@ -443,7 +444,7 @@ namespace TobogganGame
 
             if (isNewTimer)
             {
-                gameTimer = new Timer();
+                gameTimer = new System.Windows.Forms.Timer();
                 gameTimer.Tick += GameTimer_Tick;
             }
 
@@ -463,24 +464,41 @@ namespace TobogganGame
 
             if (isGameOver)
             {
+                // If game is over but AI is controlling, update the rays one last time
+                if (aiControlled && aiController != null)
+                {
+                    // Force AI to update rays for final position without actually moving
+                    aiController.UpdateRaysForCurrentPosition();
+                }
+
+                // Force immediate redraw to show final state before handling game over
+                this.Invalidate();
+                this.Update();
+
+                // Small delay to ensure the screen updates before showing message
+                Thread.Sleep(200);
+
                 HandleGameOver();
                 return;
             }
 
             UpdateGameState();
+
+            // Redraw to update the screen
+            this.Invalidate();
         }
 
         private void HandleGameOver()
         {
+            // Stop the timer
+            gameTimer.Stop();
+
             if (trainingMode)
             {
                 // In training mode, automatically restart the game
                 InitializeGame();
                 return;
             }
-
-            // In normal mode, stop the game and save progress
-            gameTimer.Stop();
 
             // Save neural network weights when game ends (in non-training mode)
             if (aiController != null)
@@ -797,7 +815,6 @@ namespace TobogganGame
             DrawSnowEffects(g, gameArea);
 
             // Draw grid lines (subtle)
-            DrawGridLines(g);
         }
 
         private void DrawSnowEffects(Graphics g, Rectangle gameArea)
@@ -812,24 +829,6 @@ namespace TobogganGame
                     int y = r.Next(gameArea.Height);
                     int size = r.Next(2, 5);
                     g.FillEllipse(snowBrush, x, y, size, size);
-                }
-            }
-        }
-
-        private void DrawGridLines(Graphics g)
-        {
-            using (Pen gridPen = new Pen(Color.FromArgb(220, 220, 220)))
-            {
-                // Draw vertical grid lines
-                for (int x = 0; x <= GridWidth; x++)
-                {
-                    g.DrawLine(gridPen, x * CellSize, 0, x * CellSize, GridHeight * CellSize);
-                }
-
-                // Draw horizontal grid lines
-                for (int y = 0; y <= GridHeight; y++)
-                {
-                    g.DrawLine(gridPen, 0, y * CellSize, GridWidth * CellSize, y * CellSize);
                 }
             }
         }

@@ -34,8 +34,8 @@ namespace TobogganGame
         private const double MinLearningRate = 0.0001;
 
         private const double DiscountFactor = 0.95;
-        private const double InitialExplorationRate = 0.95; 
-        private const double ExplorationRateDecay = 0.9995;
+        private const double InitialExplorationRate = 0.99; 
+        private const double ExplorationRateDecay = 0.9998;
         private const double MinExplorationRate = 0.1;      
 
         // Target network updates
@@ -830,12 +830,12 @@ namespace TobogganGame
             if (recentScore > 1.5)
             {
                 // Slow down decay when we're improving
-                decayRate = Math.Pow(LearningRateDecay, 0.8);
+                decayRate = Math.Pow(LearningRateDecay, 0.6);
             }
             else if (recentLoss > 5.0)
             {
                 // Speed up decay when loss is unstable
-                decayRate = Math.Pow(LearningRateDecay, 1.2);
+                decayRate = Math.Pow(LearningRateDecay, 1.05);
             }
 
             // Apply decay
@@ -929,7 +929,7 @@ namespace TobogganGame
                 // Extra decay for successful flag collection
                 if (collectedFlag)
                 {
-                    Stats.ExplorationRate *= 0.998;
+                    Stats.ExplorationRate *= 0.999;
                 }
 
                 // Ensure we don't go below the current minimum
@@ -976,9 +976,23 @@ namespace TobogganGame
         {
             double recentAvgScore = Stats.GetRecentAverageScore(20);
 
-            return Stats.TotalGamesPlayed > 1000 &&
+            if (Stats.TotalGamesPlayed > 100 &&
+                recentAvgScore < Stats.GetRecentAverageScore(50) * 0.7 &&
+                Stats.ExplorationRate < 0.4)
+            {
+                return true;
+            }
+
+            if (Stats.TotalGamesPlayed > 300 &&
+                recentAvgScore < 1.0 &&
+                Stats.ExplorationRate < 0.3)
+            {
+                return true;
+            }
+
+            return Stats.TotalGamesPlayed > 500 && 
                    recentAvgScore < 0.5 &&
-                   Stats.ExplorationRate < 0.2;
+                   Stats.ExplorationRate < 0.25; 
         }
 
         /// <summary>
@@ -1251,7 +1265,7 @@ namespace TobogganGame
           
             if (experience.Action == optimalAction)
             {
-                multiplier = 1.20; 
+                multiplier = 1.25; 
             }
             else if (experience.Action == (optimalAction + 1) % 8 ||
                      experience.Action == (optimalAction - 1 + 8) % 8)
@@ -1261,14 +1275,14 @@ namespace TobogganGame
             else if (experience.Action == (optimalAction + 2) % 8 ||
                      experience.Action == (optimalAction - 2 + 8) % 8)
             {
-                multiplier = 1.05;  
+                multiplier = 1.1;  
             }
 
             
             int oppositeAction = (optimalAction + 4) % 8;
             if (experience.Action == oppositeAction)
             {
-                multiplier = 0.85;  
+                multiplier = 0.8;  
             }
             else if (experience.Action == (oppositeAction + 1) % 8 ||
                      experience.Action == (oppositeAction - 1 + 8) % 8)
@@ -1283,12 +1297,17 @@ namespace TobogganGame
             }
             else if (experience.Reward < 0 && multiplier < 1.0)
             {
-                targetQ *= (multiplier * 0.9); 
+                targetQ *= (multiplier * 0.8); 
             }
 
             if (experience.Reward > 20.0 && experience.Action == optimalAction)
             {
-                targetQ *= 1.1; 
+                targetQ *= 1.2; 
+            }
+
+            if (experience.Reward >= 50.0)
+            {
+                targetQ *= 1.2;  // תוספת חיזוק לפעולות עם תגמול גבוה במיוחד
             }
 
             // Train network
@@ -2124,6 +2143,15 @@ namespace TobogganGame
                 result.RayEnd = point;
                 result.HitType = RayHitType.Flag;
             }
+        }
+
+        /// <summary>
+        /// Forces an update of ray information without performing a move
+        /// </summary>
+        public void UpdateRaysForCurrentPosition()
+        {
+            // Update the state representation which includes ray casting
+            UpdateState();
         }
 
         /// <summary>
