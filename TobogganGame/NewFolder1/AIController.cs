@@ -37,8 +37,8 @@ namespace TobogganGame
 
         private const double DiscountFactor = 0.95;
         private const double InitialExplorationRate = 0.99; 
-        private const double ExplorationRateDecay = 0.9999;
-        private const double MinExplorationRate = 0.15;      
+        private const double ExplorationRateDecay = 0.9998;
+        private const double MinExplorationRate = 0.05;      
 
         // Target network updates
         private const double TargetNetworkTau = 0.05;
@@ -994,7 +994,6 @@ namespace TobogganGame
         {
             double recentAvgScore = Stats.GetRecentAverageScore(20);
 
-            // תנאי מוקדם - אם הציון הממוצע ירד משמעותית
             if (Stats.TotalGamesPlayed > 100 &&
                 recentAvgScore < Stats.GetRecentAverageScore(50) * 0.7 &&
                 Stats.ExplorationRate < 0.4)
@@ -1002,7 +1001,6 @@ namespace TobogganGame
                 return true;
             }
 
-            // תנאי תקיעות מוקדמת - אם אין התקדמות בציון למרות משחקים רבים
             if (Stats.TotalGamesPlayed > 300 &&
                 recentAvgScore < 1.0 &&
                 Stats.ExplorationRate < 0.3)
@@ -1010,10 +1008,9 @@ namespace TobogganGame
                 return true;
             }
 
-            // התנאי המקורי, אבל מופעל מוקדם יותר
-            return Stats.TotalGamesPlayed > 500 && // שונה מ-1000
-                   recentAvgScore < 0.5 &&
-                   Stats.ExplorationRate < 0.25; // קצת יותר מהמקורי
+            return Stats.TotalGamesPlayed > 500 && 
+                   recentAvgScore < 3 &&
+                   Stats.ExplorationRate < 0.25; 
         }
 
         /// <summary>
@@ -1303,12 +1300,12 @@ namespace TobogganGame
             int oppositeAction = (optimalAction + 4) % 8;
             if (experience.Action == oppositeAction)
             {
-                multiplier = 0.8;  
+                multiplier = 0.7;  
             }
             else if (experience.Action == (oppositeAction + 1) % 8 ||
                      experience.Action == (oppositeAction - 1 + 8) % 8)
             {
-                multiplier = 0.9;  
+                multiplier = 0.8;  
             }
 
             
@@ -1316,19 +1313,25 @@ namespace TobogganGame
             {
                 targetQ *= multiplier; 
             }
+
+            else if (experience.Reward < -40.0)  
+            {
+                targetQ *= 1.4;  
+            }
+
             else if (experience.Reward < 0 && multiplier < 1.0)
             {
-                targetQ *= (multiplier * 0.8); 
+                targetQ *= (multiplier * 0.7); 
             }
 
             if (experience.Reward > 20.0 && experience.Action == optimalAction)
             {
-                targetQ *= 1.2; 
+                targetQ *= 1.3; 
             }
 
             if (experience.Reward >= 50.0)
             {
-                targetQ *= 1.2;  // תוספת חיזוק לפעולות עם תגמול גבוה במיוחד
+                targetQ *= 1.2;
             }
 
             // Train network
@@ -1487,10 +1490,19 @@ namespace TobogganGame
             Point head = gameEngine.Toboggan.Head;
             Point flag = gameEngine.Flag.Position;
 
+            // Check for wall collision
+            bool hitWall = CheckWallCollision();
+
             // Strong negative reward for hitting obstacle
             if (hitObstacle)
             {
-                reward -= 25.0;
+                reward -= 50.0;
+            }
+
+            // Strong negative reward for hitting wall
+            if (hitWall)
+            {
+                reward -= 50.0;
             }
 
             // Strong positive reward for collecting flag
@@ -1516,13 +1528,13 @@ namespace TobogganGame
                 {
                     // Smaller penalty for moving away from flag
                     double regression = currentDistance - previousDistance;
-                    reward -= 2.0 * regression;
+                    reward -= 3.0 * regression;
                 }
 
                 // Give small time penalty to encourage flag collection
-                if (framesSinceLastFlag > 50)
+                if (framesSinceLastFlag > 15)
                 {
-                    reward -= 0.2;
+                    reward -= 0.3;
                 }
             }
 
@@ -1530,6 +1542,16 @@ namespace TobogganGame
             distanceToFlagPrevious = CalculateDistance(head, flag);
 
             return reward;
+        }
+
+        /// <summary>
+        /// Checks if the toboggan head hit a wall
+        /// </summary>
+        /// <returns>True if wall collision occurred, false otherwise</returns>
+        private bool CheckWallCollision()
+        {
+            Point head = gameEngine.Toboggan.Head;
+            return head.X <= 0 || head.X >= gridWidth - 1 || head.Y <= 0 || head.Y >= gridHeight - 1;
         }
 
         /// <summary>
