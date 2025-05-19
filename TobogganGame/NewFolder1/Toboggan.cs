@@ -57,8 +57,6 @@ namespace TobogganGame
         /// <summary>
         /// Initializes a new toboggan at the specified starting position
         /// </summary>
-        /// <param name="startX">Starting X coordinate</param>
-        /// <param name="startY">Starting Y coordinate</param>
         public Toboggan(int startX, int startY)
         {
             Initialize(startX, startY);
@@ -67,8 +65,6 @@ namespace TobogganGame
         /// <summary>
         /// Initializes or resets the toboggan to the starting position
         /// </summary>
-        /// <param name="startX">Starting X coordinate</param>
-        /// <param name="startY">Starting Y coordinate</param>
         public void Initialize(int startX, int startY)
         {
             // Create a new linked list
@@ -189,8 +185,6 @@ namespace TobogganGame
         /// <summary>
         /// Calculates a new head position based on current head and direction
         /// </summary>
-        /// <param name="head">Current head position</param>
-        /// <returns>New head position</returns>
         private Point CalculateNewHeadPosition(Point head)
         {
             Point newHead = new Point(head.X, head.Y);
@@ -255,8 +249,6 @@ namespace TobogganGame
         /// <summary>
         /// Draws the toboggan on the graphics surface
         /// </summary>
-        /// <param name="g">Graphics object to draw on</param>
-        /// <param name="cellSize">Size of each grid cell</param>
         public void Draw(Graphics g, int cellSize)
         {
             // Draw snow trails first (so they appear behind the sled)

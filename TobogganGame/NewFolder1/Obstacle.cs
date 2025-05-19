@@ -33,16 +33,10 @@ namespace TobogganGame
         /// </summary>
         public Point Position => position;
 
-        /// <summary>
-        /// Gets the type of obstacle
-        /// </summary>
-        public ObstacleType Type => type;
 
         /// <summary>
         /// Creates a new obstacle at the specified position with the specified type
         /// </summary>
-        /// <param name="position">Position of the obstacle on the game grid</param>
-        /// <param name="type">Type of obstacle (Rock, Tree, or IceHill)</param>
         public Obstacle(Point position, ObstacleType type)
         {
             this.position = position;
@@ -52,8 +46,6 @@ namespace TobogganGame
         /// <summary>
         /// Draws the obstacle on the graphics surface
         /// </summary>
-        /// <param name="g">Graphics object to draw on</param>
-        /// <param name="cellSize">Size of each grid cell</param>
         public void Draw(Graphics g, int cellSize)
         {
             int x = position.X * cellSize;

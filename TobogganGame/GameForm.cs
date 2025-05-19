@@ -815,31 +815,34 @@ namespace TobogganGame
             DrawSnowEffects(g, gameArea);
 
             // Draw grid lines (subtle)
-            //using (Pen gridPen = new Pen(Color.FromArgb(30, 100, 100, 100)))
-            //{
-            //    // Draw vertical grid lines
-            //    for (int x = 1; x < GridWidth; x++)
-            //    {
-            //        g.DrawLine(gridPen,
-            //            x * CellSize, 0,
-            //            x * CellSize, GridHeight * CellSize);
-            //    }
-
-            //    // Draw horizontal grid lines
-            //    for (int y = 1; y < GridHeight; y++)
-            //    {
-            //        g.DrawLine(gridPen,
-            //            0, y * CellSize,
-            //            GridWidth * CellSize, y * CellSize);
-            //    }
-            //}
+            //DrawGridLines(g);
         }
+        private void DrawGridLines(Graphics g)
+        {
+            using (Pen gridPen = new Pen(Color.FromArgb(30, 100, 100, 100)))
+            {
+                // Draw vertical grid lines
+                for (int x = 1; x < GridWidth; x++)
+                {
+                    g.DrawLine(gridPen,
+                        x * CellSize, 0,
+                        x * CellSize, GridHeight * CellSize);
+                }
 
+                // Draw horizontal grid lines
+                for (int y = 1; y < GridHeight; y++)
+                {
+                    g.DrawLine(gridPen,
+                        0, y * CellSize,
+                        GridWidth * CellSize, y * CellSize);
+                }
+            }
+        }
         private void DrawSnowEffects(Graphics g, Rectangle gameArea)
         {
             using (Brush snowBrush = new SolidBrush(Color.White))
             {
-                Random r = new Random(42); // Fixed seed for consistent snow pattern
+                Random r = new Random(42); 
 
                 for (int i = 0; i < 300; i++)
                 {

@@ -47,7 +47,6 @@ namespace TobogganGame
         /// <summary>
         /// Saves statistics to a file in binary format
         /// </summary>
-        /// <param name="filePath">Path to save the file</param>
         public void SaveToFile(string filePath)
         {
             try
@@ -109,8 +108,6 @@ namespace TobogganGame
         /// <summary>
         /// Loads statistics from a file
         /// </summary>
-        /// <param name="filePath">Path to the file to load</param>
-        /// <returns>True if successfully loaded, false otherwise</returns>
         public bool LoadFromFile(string filePath)
         {
             if (!File.Exists(filePath))
@@ -216,8 +213,6 @@ namespace TobogganGame
         /// <summary>
         /// Records the result of a completed game
         /// </summary>
-        /// <param name="score">Final score of the game</param>
-        /// <param name="episodeReward">Total reward earned in the episode</param>
         public void RecordGameResult(int score, double episodeReward)
         {
             TotalGamesPlayed++;
@@ -302,7 +297,6 @@ namespace TobogganGame
         /// Gets the average score from recent games
         /// </summary>
         /// <param name="count">Number of recent games to average</param>
-        /// <returns>Average score</returns>
         public double GetRecentAverageScore(int count = 20)
         {
             if (ScoreHistory.Count == 0)
@@ -316,7 +310,6 @@ namespace TobogganGame
         /// Gets the average loss from recent training steps with maximum stability
         /// </summary>
         /// <param name="count">Number of recent steps to average</param>
-        /// <returns>Average loss value</returns>
         public double GetRecentAverageLoss(int count = 50)
         {
             if (LossHistory.Count == 0)

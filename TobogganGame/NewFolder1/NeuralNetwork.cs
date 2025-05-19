@@ -4,7 +4,7 @@ using System.IO;
 namespace TobogganGame
 {
     /// <summary>
-    /// Neural network with simplified architecture for better learning
+    /// Neural network
     /// </summary>
     public class NeuralNetwork
     {
@@ -36,9 +36,6 @@ namespace TobogganGame
         /// <summary>
         /// Creates a new neural network
         /// </summary>
-        /// <param name="inputSize">Number of input neurons</param>
-        /// <param name="hiddenSize">Number of hidden neurons</param>
-        /// <param name="outputSize">Number of output neurons</param>
         public NeuralNetwork(int inputSize, int hiddenSize, int outputSize)
         {
             this.inputSize = inputSize;
@@ -102,7 +99,6 @@ namespace TobogganGame
         /// <summary>
         /// ReLU activation function
         /// </summary>
-        /// <param name="x">Input value</param>
         /// <returns>Activated value</returns>
         private double ReLU(double x)
         {
@@ -112,7 +108,6 @@ namespace TobogganGame
         /// <summary>
         /// Derivative of ReLU function
         /// </summary>
-        /// <param name="x">Input value</param>
         /// <returns>Derivative value</returns>
         private double ReLUDerivative(double x)
         {
@@ -362,7 +357,6 @@ namespace TobogganGame
         /// <summary>
         /// Sets the learning rate
         /// </summary>
-        /// <param name="rate">New learning rate</param>
         public void SetLearningRate(double rate)
         {
             this.learningRate = rate;
@@ -371,7 +365,6 @@ namespace TobogganGame
         /// <summary>
         /// Saves network weights to file
         /// </summary>
-        /// <param name="filePath">Path to save weights</param>
         public void SaveWeights(string filePath = DefaultWeightsFilePath)
         {
             try
@@ -442,7 +435,6 @@ namespace TobogganGame
         /// <summary>
         /// Loads network weights from file
         /// </summary>
-        /// <param name="filePath">Path to load weights from</param>
         /// <returns>True if successfully loaded, false otherwise</returns>
         public bool LoadWeights(string filePath = DefaultWeightsFilePath)
         {

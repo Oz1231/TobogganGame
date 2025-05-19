@@ -66,7 +66,6 @@ namespace TobogganGame
             new Point(11, 22)
         };
 
-        // Predefined directions for adjacent obstacles (constant for each obstacle)
         private static readonly Point[] adjacentDirections = new Point[]
         {
             new Point(1, 0),    // Right
@@ -89,8 +88,6 @@ namespace TobogganGame
         /// <summary>
         /// Initializes a new game engine
         /// </summary>
-        /// <param name="gridWidth">Width of the game grid</param>
-        /// <param name="gridHeight">Height of the game grid</param>
         public GameEngine(int gridWidth, int gridHeight)
         {
             this.gridWidth = gridWidth;
@@ -312,7 +309,6 @@ namespace TobogganGame
         /// <summary>
         /// Sets the direction of the toboggan
         /// </summary>
-        /// <param name="direction">New direction for the toboggan</param>
         public void SetDirection(Direction direction)
         {
             toboggan.ChangeDirection(direction);
@@ -321,8 +317,6 @@ namespace TobogganGame
         /// <summary>
         /// Calculates a new head position based on current head and direction
         /// </summary>
-        /// <param name="head">Current head position</param>
-        /// <param name="direction">Direction to move</param>
         /// <returns>New head position</returns>
         private Point CalculateNewHeadPosition(Point head, Direction direction)
         {
@@ -366,8 +360,6 @@ namespace TobogganGame
         /// <summary>
         /// Checks if the position collides with any obstacle
         /// </summary>
-        /// <param name="position">Position to check</param>
-        /// <returns>True if collision detected, false otherwise</returns>
         private bool CollidesWithObstacle(Point position)
         {
             foreach (Obstacle obstacle in obstacles)
@@ -385,7 +377,6 @@ namespace TobogganGame
         /// Updates the game state for one tick
         /// </summary>
         /// <returns>True if flag was collected, false otherwise</returns>
-
         public bool Update()
         {
             // Early exit if game is over
@@ -467,7 +458,6 @@ namespace TobogganGame
         /// <summary>
         /// Gets the width of the game grid
         /// </summary>
-        /// <returns>Grid width</returns>
         public int GetGridWidth()
         {
             return gridWidth;
@@ -476,7 +466,6 @@ namespace TobogganGame
         /// <summary>
         /// Gets the height of the game grid
         /// </summary>
-        /// <returns>Grid height</returns>
         public int GetGridHeight()
         {
             return gridHeight;

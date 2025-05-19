@@ -64,10 +64,6 @@ namespace TobogganGame
         /// <summary>
         /// Places the flag at a new random position, avoiding toboggan and obstacles
         /// </summary>
-        /// <param name="gridWidth">Width of the game grid</param>
-        /// <param name="gridHeight">Height of the game grid</param>
-        /// <param name="toboggan">The toboggan to avoid overlapping with</param>
-        /// <param name="obstacles">The obstacles to avoid overlapping with</param>
         public void Relocate(int gridWidth, int gridHeight, Toboggan toboggan, List<Obstacle> obstacles = null)
         {
             bool validPosition = false;
@@ -128,8 +124,6 @@ namespace TobogganGame
         /// <summary>
         /// Draws the flag on the graphics surface
         /// </summary>
-        /// <param name="g">Graphics object to draw on</param>
-        /// <param name="cellSize">Size of each grid cell</param>
         public void Draw(Graphics g, int cellSize)
         {
             // Save current transform

@@ -111,7 +111,6 @@ namespace TobogganGame
         /// <summary>
         /// Creates a new AI controller
         /// </summary>
-        /// <param name="gameEngine">The game engine to control</param>
         public AIController(GameEngine gameEngine)
         {
             this.gameEngine = gameEngine;
@@ -224,7 +223,6 @@ namespace TobogganGame
         /// <summary>
         /// Sets the training mode
         /// </summary>
-        /// <param name="isTraining">Whether training mode is enabled</param>
         public void SetTrainingMode(bool isTraining)
         {
             TrainingMode = isTraining;
@@ -244,7 +242,6 @@ namespace TobogganGame
         /// <summary>
         /// Updates the game engine reference for a new game
         /// </summary>
-        /// <param name="newGameEngine">New game engine instance</param>
         public void SetGameEngine(GameEngine newGameEngine)
         {
             this.gameEngine = newGameEngine;
@@ -658,8 +655,6 @@ namespace TobogganGame
         /// <summary>
         /// Converts action number to direction
         /// </summary>
-        /// <param name="action">Action index</param>
-        /// <returns>Corresponding direction</returns>
         private Direction DirectionFromAction(int action)
         {
             Direction[] directionMap = {
@@ -681,8 +676,6 @@ namespace TobogganGame
         /// <summary>
         /// Updates AI after move with adaptive learning
         /// </summary>
-        /// <param name="collectedFlag">Whether a flag was collected</param>
-        /// <param name="hitObstacle">Whether an obstacle was hit</param>
         public void UpdateAfterMove(bool collectedFlag, bool hitObstacle)
         {
             // Update position history
@@ -925,7 +918,6 @@ namespace TobogganGame
         /// <summary>
         /// Dynamically adjusts exploration rate based on performance and game state
         /// </summary>
-        /// <param name="collectedFlag">Whether a flag was collected this move</param>
         private void UpdateExplorationRate(bool collectedFlag)
         {
             // Calculate appropriate minimum exploration rate
@@ -1126,7 +1118,6 @@ namespace TobogganGame
         /// <summary>
         /// Creates a batch of experiences with prioritization
         /// </summary>
-        /// <returns>Prioritized batch of experiences</returns>
         private List<Experience> CreatePrioritizedBatch()
         {
             List<Experience> batch = new List<Experience>();
@@ -1360,10 +1351,7 @@ namespace TobogganGame
         /// <summary>
         /// Fills batch with experiences using prioritized sampling based on reward magnitude
         /// </summary>
-        /// <param name="batch">Current batch of experiences</param>
-        /// <param name="selectedIndices">Indices already selected</param>
-        /// <param name="targetBatchSize">Target size for the batch</param>
-        private void FillBatchWithPrioritizedSampling(List<Experience> batch, HashSet<int> selectedIndices, int targetBatchSize)
+    private void FillBatchWithPrioritizedSampling(List<Experience> batch, HashSet<int> selectedIndices, int targetBatchSize)
         {
             // Skip if batch is already full or no more experiences available
             if (batch.Count >= targetBatchSize || replayBuffer.Count <= selectedIndices.Count)
@@ -1454,9 +1442,6 @@ namespace TobogganGame
         /// <summary>
         /// Shuffles a list using Fisher-Yates algorithm
         /// </summary>
-        /// <typeparam name="T">Type of items in the list</typeparam>
-        /// <param name="list">List to shuffle</param>
-        /// <returns>Shuffled list</returns>
         private List<T> ShuffleList<T>(List<T> list)
         {
             List<T> shuffled = new List<T>(list);
@@ -1481,9 +1466,6 @@ namespace TobogganGame
         /// <summary>
         /// Calculates reward based on game actions
         /// </summary>
-        /// <param name="collectedFlag">Whether flag was collected</param>
-        /// <param name="hitObstacle">Whether obstacle was hit</param>
-        /// <returns>Calculated reward value</returns>
         private double CalculateReward(bool collectedFlag, bool hitObstacle)
         {
             double reward = 0;
@@ -1547,7 +1529,6 @@ namespace TobogganGame
         /// <summary>
         /// Checks if the toboggan head hit a wall
         /// </summary>
-        /// <returns>True if wall collision occurred, false otherwise</returns>
         private bool CheckWallCollision()
         {
             Point head = gameEngine.Toboggan.Head;
@@ -1680,7 +1661,6 @@ namespace TobogganGame
         /// <summary>
         /// Detects if the toboggan is stuck in a pattern
         /// </summary>
-        /// <returns>True if stuck, false otherwise</returns>
         private bool IsStuck()
         {
             // Need enough history to detect patterns
@@ -1787,9 +1767,6 @@ namespace TobogganGame
         /// <summary>
         /// Checks if two points are at the same position
         /// </summary>
-        /// <param name="a">First point</param>
-        /// <param name="b">Second point</param>
-        /// <returns>True if same position, false otherwise</returns>
         private bool SamePosition(Point a, Point b)
         {
             return a.X == b.X && a.Y == b.Y;
@@ -1802,9 +1779,6 @@ namespace TobogganGame
         /// <summary>
         /// Calculates distance between two points
         /// </summary>
-        /// <param name="a">First point</param>
-        /// <param name="b">Second point</param>
-        /// <returns>Euclidean distance</returns>
         private double CalculateDistance(Point a, Point b)
         {
             return Math.Sqrt(Math.Pow(a.X - b.X, 2) + Math.Pow(a.Y - b.Y, 2));
