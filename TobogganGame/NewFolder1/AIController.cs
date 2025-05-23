@@ -1263,9 +1263,6 @@ namespace TobogganGame
             ref double totalLoss,
             ref int validExamples)
         {
-
-            double[] stateArray = experience.State;
-
            
             int optimalAction = GetDirectedFlagAction();  
 
