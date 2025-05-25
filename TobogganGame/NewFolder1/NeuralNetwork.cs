@@ -117,7 +117,6 @@ namespace TobogganGame
         /// <summary>
         /// Performs forward pass through network
         /// </summary>
-        /// <param name="inputs">Input values</param>
         /// <returns>Output values</returns>
         public double[] FeedForward(double[] inputs)
         {
@@ -164,8 +163,6 @@ namespace TobogganGame
         /// <summary>
         /// Trains the network using backpropagation
         /// </summary>
-        /// <param name="inputs">Input values</param>
-        /// <param name="targets">Target output values</param>
         public void Train(double[] inputs, double[] targets)
         {
             // Forward pass
@@ -251,9 +248,6 @@ namespace TobogganGame
         /// <summary>
         /// Trains the network for Q-Learning (updates only one output)
         /// </summary>
-        /// <param name="state">Current state</param>
-        /// <param name="action">Selected action</param>
-        /// <param name="targetQ">Target Q-value</param>
         public void TrainQ(double[] state, int action, double targetQ)
         {
             // Get current Q values
@@ -273,8 +267,6 @@ namespace TobogganGame
         /// <summary>
         /// Performs soft update of target network
         /// </summary>
-        /// <param name="targetNetwork">Target network to update</param>
-        /// <param name="tau">Update rate (0-1)</param>
         public void SoftUpdateTargetNetwork(NeuralNetwork targetNetwork, double tau)
         {
             // Update input-hidden weights
