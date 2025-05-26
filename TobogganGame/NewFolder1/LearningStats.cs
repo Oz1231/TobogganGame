@@ -350,63 +350,6 @@ namespace TobogganGame
         }
 
         /// <summary>
-        /// Gets a normalized loss value for visualization (0.0 - 1.0 range) with logarithmic scaling
-        /// </summary>
-        /// <returns>Normalized loss value between 0 and 1</returns>
-        public double GetNormalizedLoss()
-        {
-            if (LossHistory.Count == 0)
-                return 0;
-
-            double currentLoss = GetRecentAverageLoss(10);
-
-            // Handle the case where min and max are the same or invalid
-            if (MinLoss >= MaxLoss || double.IsNaN(MinLoss) || double.IsInfinity(MinLoss) ||
-                double.IsNaN(MaxLoss) || double.IsInfinity(MaxLoss))
-            {
-                return 0.5; // Default to middle value
-            }
-
-            // Normalize between 0 and 1 with logarithmic scaling for better visualization
-            double logMin = Math.Log10(Math.Max(0.01, MinLoss));
-            double logMax = Math.Log10(Math.Max(0.1, MaxLoss));
-            double logCurrent = Math.Log10(Math.Max(0.01, currentLoss));
-
-            // Normalized calculation on logarithmic scale
-            double normalized = (logCurrent - logMin) / (logMax - logMin);
-
-            // Clamp to valid range
-            return Math.Max(0, Math.Min(1, normalized));
-        }
-
-        /// <summary>
-        /// Gets success rate (percentage of games with score > 0) in recent games
-        /// </summary>
-        /// <param name="count">Number of recent games to check</param>
-        /// <returns>Success rate as a value between 0 and 1</returns>
-        public double GetRecentSuccessRate(int count = 50)
-        {
-            if (ScoreHistory.Count == 0)
-                return 0;
-
-            count = Math.Min(count, ScoreHistory.Count);
-            var recentScores = ScoreHistory.Skip(ScoreHistory.Count - count).ToList();
-
-            int successCount = recentScores.Count(s => s > 0);
-            return (double)successCount / recentScores.Count;
-        }
-
-        /// <summary>
-        /// Gets total training time in hours
-        /// </summary>
-        /// <returns>Training time in hours</returns>
-        public double GetTrainingTimeHours()
-        {
-            TimeSpan elapsed = DateTime.Now - TrainingStartTime;
-            return elapsed.TotalHours;
-        }
-
-        /// <summary>
         /// Check for problematic patterns in loss history and fix them
         /// </summary>
         public void CheckLossPatternAndReset()

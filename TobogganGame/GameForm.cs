@@ -741,24 +741,23 @@ namespace TobogganGame
                 g.DrawLines(linePen, points);
             }
         }
-
         private List<double> CalculateMovingAverage(List<int> scores)
         {
             List<double> movingAvg = new List<double>();
+            int windowSize = 5; 
 
             for (int i = 0; i < scores.Count; i++)
             {
-                int start = Math.Max(0, i - 4);
-                int count = i - start + 1;
-                double avg = 0;
+                int actualWindow = Math.Min(windowSize, i + 1);
+                int start = i - actualWindow + 1;
 
+                double sum = 0;
                 for (int j = start; j <= i; j++)
                 {
-                    avg += scores[j];
+                    sum += scores[j];
                 }
 
-                avg /= count;
-                movingAvg.Add(avg);
+                movingAvg.Add(sum / actualWindow);
             }
 
             return movingAvg;
