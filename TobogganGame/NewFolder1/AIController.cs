@@ -1263,29 +1263,29 @@ namespace TobogganGame
           
             if (experience.Action == optimalAction)
             {
-                multiplier = 1.08; 
+                multiplier = 1.1; 
             }
             else if (experience.Action == (optimalAction + 1) % 8 ||
                      experience.Action == (optimalAction - 1 + 8) % 8)
             {
-                multiplier = 1.04; 
+                multiplier = 1.08; 
             }
             else if (experience.Action == (optimalAction + 2) % 8 ||
                      experience.Action == (optimalAction - 2 + 8) % 8)
             {
-                multiplier = 1.02;  
+                multiplier = 1.04;  
             }
 
             
             int oppositeAction = (optimalAction + 4) % 8;
             if (experience.Action == oppositeAction)
             {
-                multiplier = 0.96;  
+                multiplier = 0.90;  
             }
             else if (experience.Action == (oppositeAction + 1) % 8 ||
                      experience.Action == (oppositeAction - 1 + 8) % 8)
             {
-                multiplier = 0.98;  
+                multiplier = 0.95;  
             }
 
             
@@ -1296,7 +1296,7 @@ namespace TobogganGame
 
             else if (experience.Reward < -40.0)  
             {
-                targetQ *= 1;  
+                targetQ *= 1.1;  
             }
 
             else if (experience.Reward < 0 && multiplier < 1.0)
