@@ -62,7 +62,7 @@ namespace TobogganGame
 
         // Flag collection tracking
         private int framesSinceLastFlag = 0;
-        private const int DirectMoveThreshold = 6;
+        private const int DirectMoveThreshold = 5;
         private double minDistanceToFlag = double.MaxValue;
 
         // State representation
@@ -1263,29 +1263,29 @@ namespace TobogganGame
           
             if (experience.Action == optimalAction)
             {
-                multiplier = 1.1; 
+                multiplier = 1.25; 
             }
             else if (experience.Action == (optimalAction + 1) % 8 ||
                      experience.Action == (optimalAction - 1 + 8) % 8)
             {
-                multiplier = 1.08; 
+                multiplier = 1.15; 
             }
             else if (experience.Action == (optimalAction + 2) % 8 ||
                      experience.Action == (optimalAction - 2 + 8) % 8)
             {
-                multiplier = 1.04;  
+                multiplier = 1.1;  
             }
 
             
             int oppositeAction = (optimalAction + 4) % 8;
             if (experience.Action == oppositeAction)
             {
-                multiplier = 0.90;  
+                multiplier = 0.7;  
             }
             else if (experience.Action == (oppositeAction + 1) % 8 ||
                      experience.Action == (oppositeAction - 1 + 8) % 8)
             {
-                multiplier = 0.95;  
+                multiplier = 0.8;  
             }
 
             
@@ -1296,22 +1296,22 @@ namespace TobogganGame
 
             else if (experience.Reward < -40.0)  
             {
-                targetQ *= 1.1;  
+                targetQ *= 1.2;  
             }
 
             else if (experience.Reward < 0 && multiplier < 1.0)
             {
-                targetQ *= (multiplier * 0.9);
+                targetQ *= (multiplier * 0.8);
             }
 
             if (experience.Reward > 20.0 && experience.Action == optimalAction)
             {
-                targetQ *= 1.03;
+                targetQ *= 1.15;
             }
 
             if (experience.Reward >= 50.0)
             {
-                targetQ *= 1.05;
+                targetQ *= 1.2;
             }
 
             // Train network
