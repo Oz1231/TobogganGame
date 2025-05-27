@@ -308,10 +308,16 @@ namespace TobogganGame
         public Direction GetNextMove()
         {
             int action;
+            double currentExplorationRate = Stats.ExplorationRate; 
+            bool isStuck = IsStuck();  
+            bool shouldExplore = random.NextDouble() < currentExplorationRate;  
 
-            
-            double currentExplorationRate = Stats.ExplorationRate;
-            bool shouldExplore = random.NextDouble() < currentExplorationRate;
+            if (framesSinceLastFlag > DirectMoveThreshold || isStuck) 
+            {
+                currentExplorationRate = Math.Min(currentExplorationRate * 1.9, 0.8);
+                shouldExplore = random.NextDouble() < currentExplorationRate; 
+            }
+
 
             if (shouldExplore)
             {
