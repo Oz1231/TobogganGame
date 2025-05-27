@@ -1263,29 +1263,29 @@ namespace TobogganGame
           
             if (experience.Action == optimalAction)
             {
-                multiplier = 1.25; 
+                multiplier = 1.08; 
             }
             else if (experience.Action == (optimalAction + 1) % 8 ||
                      experience.Action == (optimalAction - 1 + 8) % 8)
             {
-                multiplier = 1.1; 
+                multiplier = 1.04; 
             }
             else if (experience.Action == (optimalAction + 2) % 8 ||
                      experience.Action == (optimalAction - 2 + 8) % 8)
             {
-                multiplier = 1.1;  
+                multiplier = 1.02;  
             }
 
             
             int oppositeAction = (optimalAction + 4) % 8;
             if (experience.Action == oppositeAction)
             {
-                multiplier = 0.7;  
+                multiplier = 0.96;  
             }
             else if (experience.Action == (oppositeAction + 1) % 8 ||
                      experience.Action == (oppositeAction - 1 + 8) % 8)
             {
-                multiplier = 0.8;  
+                multiplier = 0.98;  
             }
 
             
@@ -1296,22 +1296,22 @@ namespace TobogganGame
 
             else if (experience.Reward < -40.0)  
             {
-                targetQ *= 1.2;  
+                targetQ *= 1;  
             }
 
             else if (experience.Reward < 0 && multiplier < 1.0)
             {
-                targetQ *= (multiplier * 0.8); 
+                targetQ *= (multiplier * 0.9);
             }
 
             if (experience.Reward > 20.0 && experience.Action == optimalAction)
             {
-                targetQ *= 1.15; 
+                targetQ *= 1.03;
             }
 
             if (experience.Reward >= 50.0)
             {
-                targetQ *= 1.2;
+                targetQ *= 1.05;
             }
 
             // Train network
