@@ -62,7 +62,7 @@ namespace TobogganGame
 
         // Flag collection tracking
         private int framesSinceLastFlag = 0;
-        private const int DirectMoveThreshold = 10;
+        private const int DirectMoveThreshold = 6;
         private double minDistanceToFlag = double.MaxValue;
 
         // State representation
