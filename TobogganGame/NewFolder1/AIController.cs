@@ -309,17 +309,9 @@ namespace TobogganGame
         {
             int action;
 
-            // Adjust exploration based on situation
+            
             double currentExplorationRate = Stats.ExplorationRate;
-            bool isStuck = IsStuck();
             bool shouldExplore = random.NextDouble() < currentExplorationRate;
-
-            // Boost exploration when stuck
-            if (framesSinceLastFlag > DirectMoveThreshold || isStuck)
-            {
-                currentExplorationRate = Math.Min(currentExplorationRate * 1.5, 0.8);
-                shouldExplore = random.NextDouble() < currentExplorationRate;
-            }
 
             if (shouldExplore)
             {

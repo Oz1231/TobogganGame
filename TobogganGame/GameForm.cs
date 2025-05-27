@@ -644,9 +644,8 @@ namespace TobogganGame
                 return;
             }
 
-            // Get recent scores for the graph (limited to last 50)
-            List<int> scores = stats.ScoreHistory.Skip(Math.Max(0, stats.ScoreHistory.Count - 50)).ToList();
-
+            // Get recent scores for the graph 
+            List<int> scores = stats.ScoreHistory.ToList();
             // Find max score for scaling
             int maxScore = scores.Count > 0 ? Math.Max(scores.Max(), 1) : 1;
 
@@ -658,7 +657,7 @@ namespace TobogganGame
 
             DrawGraphAxes(g, graphArea);
             DrawGraphGridAndLabels(g, graphArea, maxScore);
-            DrawMovingAverage(g, graphArea, scores, maxScore);
+            DrawAverage(g, graphArea, scores, maxScore);
             DrawScorePoints(g, graphArea, scores, maxScore);
         }
 
@@ -711,12 +710,12 @@ namespace TobogganGame
             }
         }
 
-        private void DrawMovingAverage(Graphics g, Rectangle graphArea, List<int> scores, int maxScore)
+        private void DrawAverage(Graphics g, Rectangle graphArea, List<int> scores, int maxScore)
         {
             if (scores.Count < 5) return;
 
             // Calculate moving average
-            List<double> movingAvg = CalculateMovingAverage(scores);
+            List<double> movingAvg = CalculateAverage(scores);
 
             // Draw moving average line
             if (movingAvg.Count > 1)
@@ -741,26 +740,19 @@ namespace TobogganGame
                 g.DrawLines(linePen, points);
             }
         }
-        private List<double> CalculateMovingAverage(List<int> scores)
+        private List<double> CalculateAverage(List<int> scores)
         {
-            List<double> movingAvg = new List<double>();
-            int windowSize = 5; 
+            List<double> trueAverage = new List<double>();
+            double sum = 0;
 
             for (int i = 0; i < scores.Count; i++)
             {
-                int actualWindow = Math.Min(windowSize, i + 1);
-                int start = i - actualWindow + 1;
-
-                double sum = 0;
-                for (int j = start; j <= i; j++)
-                {
-                    sum += scores[j];
-                }
-
-                movingAvg.Add(sum / actualWindow);
+                sum += scores[i]; 
+                double average = sum / (i + 1); 
+                trueAverage.Add(average);
             }
 
-            return movingAvg;
+            return trueAverage;
         }
 
         private void DrawScorePoints(Graphics g, Rectangle graphArea, List<int> scores, int maxScore)
