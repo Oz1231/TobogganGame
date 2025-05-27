@@ -644,8 +644,9 @@ namespace TobogganGame
                 return;
             }
 
-            // Get recent scores for the graph 
-            List<int> scores = stats.ScoreHistory.ToList();
+            // Get recent scores for the graph (limited to last 50)
+            List<int> scores = stats.ScoreHistory.Skip(Math.Max(0, stats.ScoreHistory.Count - 50)).ToList();
+
             // Find max score for scaling
             int maxScore = scores.Count > 0 ? Math.Max(scores.Max(), 1) : 1;
 
@@ -657,7 +658,7 @@ namespace TobogganGame
 
             DrawGraphAxes(g, graphArea);
             DrawGraphGridAndLabels(g, graphArea, maxScore);
-            DrawAverage(g, graphArea, scores, maxScore);
+            DrawMovingAverage(g, graphArea, scores, maxScore);
             DrawScorePoints(g, graphArea, scores, maxScore);
         }
 
@@ -710,12 +711,12 @@ namespace TobogganGame
             }
         }
 
-        private void DrawAverage(Graphics g, Rectangle graphArea, List<int> scores, int maxScore)
+        private void DrawMovingAverage(Graphics g, Rectangle graphArea, List<int> scores, int maxScore)
         {
             if (scores.Count < 5) return;
 
             // Calculate moving average
-            List<double> movingAvg = CalculateAverage(scores);
+            List<double> movingAvg = CalculateMovingAverage(scores);
 
             // Draw moving average line
             if (movingAvg.Count > 1)
@@ -740,19 +741,26 @@ namespace TobogganGame
                 g.DrawLines(linePen, points);
             }
         }
-        private List<double> CalculateAverage(List<int> scores)
+        private List<double> CalculateMovingAverage(List<int> scores)
         {
-            List<double> trueAverage = new List<double>();
-            double sum = 0;
+            List<double> movingAvg = new List<double>();
+            int windowSize = 5;
 
             for (int i = 0; i < scores.Count; i++)
             {
-                sum += scores[i]; 
-                double average = sum / (i + 1); 
-                trueAverage.Add(average);
+                int actualWindow = Math.Min(windowSize, i + 1);
+                int start = i - actualWindow + 1;
+
+                double sum = 0;
+                for (int j = start; j <= i; j++)
+                {
+                    sum += scores[j];
+                }
+
+                movingAvg.Add(sum / actualWindow);
             }
 
-            return trueAverage;
+            return movingAvg;
         }
 
         private void DrawScorePoints(Graphics g, Rectangle graphArea, List<int> scores, int maxScore)
@@ -833,7 +841,7 @@ namespace TobogganGame
         {
             using (Brush snowBrush = new SolidBrush(Color.White))
             {
-                Random r = new Random(42); 
+                Random r = new Random(42);
 
                 for (int i = 0; i < 300; i++)
                 {

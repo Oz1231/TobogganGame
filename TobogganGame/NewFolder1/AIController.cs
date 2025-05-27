@@ -1268,7 +1268,7 @@ namespace TobogganGame
             else if (experience.Action == (optimalAction + 1) % 8 ||
                      experience.Action == (optimalAction - 1 + 8) % 8)
             {
-                multiplier = 1.2; 
+                multiplier = 1.1; 
             }
             else if (experience.Action == (optimalAction + 2) % 8 ||
                      experience.Action == (optimalAction - 2 + 8) % 8)

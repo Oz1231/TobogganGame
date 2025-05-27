@@ -18,7 +18,8 @@ namespace TobogganGame
 
         public int GetHashCode(Point point)
         {
-            return point.X.GetHashCode() ^ point.Y.GetHashCode();
+            //xor
+            return point.X.GetHashCode() ^ point.Y.GetHashCode(); 
         }
     }
 }
