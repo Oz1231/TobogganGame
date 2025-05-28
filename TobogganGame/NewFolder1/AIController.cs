@@ -1255,63 +1255,6 @@ namespace TobogganGame
             ref int validExamples)
         {
            
-            int optimalAction = GetDirectedFlagAction();  
-
-            double multiplier = 1.0;
-
-          
-            if (experience.Action == optimalAction)
-            {
-                multiplier = 1.25; 
-            }
-            else if (experience.Action == (optimalAction + 1) % 8 ||
-                     experience.Action == (optimalAction - 1 + 8) % 8)
-            {
-                multiplier = 1.15; 
-            }
-            else if (experience.Action == (optimalAction + 2) % 8 ||
-                     experience.Action == (optimalAction - 2 + 8) % 8)
-            {
-                multiplier = 1.1;  
-            }
-
-            
-            int oppositeAction = (optimalAction + 4) % 8;
-            if (experience.Action == oppositeAction)
-            {
-                multiplier = 0.7;  
-            }
-            else if (experience.Action == (oppositeAction + 1) % 8 ||
-                     experience.Action == (oppositeAction - 1 + 8) % 8)
-            {
-                multiplier = 0.8;  
-            }
-
-            
-            if (experience.Reward > 0)
-            {
-                targetQ *= multiplier; 
-            }
-
-            else if (experience.Reward < -40.0)  
-            {
-                targetQ *= 1.2;  
-            }
-
-            else if (experience.Reward < 0 && multiplier < 1.0)
-            {
-                targetQ *= (multiplier * 0.8);
-            }
-
-            if (experience.Reward > 20.0 && experience.Action == optimalAction)
-            {
-                targetQ *= 1.15;
-            }
-
-            if (experience.Reward >= 50.0)
-            {
-                targetQ *= 1.2;
-            }
 
             // Train network
             qNetwork.TrainQ(experience.State, experience.Action, targetQ);
